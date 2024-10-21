@@ -1,4 +1,6 @@
-# Test Design
+# Basemap vs Hybrid
+
+## Survey: Locating oneself on a map using panoramic images. Investigating the difference between Google's Basemap and Hybrid Map.
 
 This test is based on the @googlemaps/js-samples located at
 https://github.com/googlemaps/js-samples
