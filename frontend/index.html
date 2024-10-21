@@ -1,0 +1,465 @@
+<!doctype html>
+<!--
+ @license
+ Copyright 2019 Google LLC. All Rights Reserved.
+ SPDX-License-Identifier: Apache-2.0
+-->
+<html>
+  <head>
+    <title>Geomedien Test</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script>
+        // Ensure markersData is defined and accessible in the global scope
+        window.addEventListener('load', () => {
+            const markersData = window.markersData;
+            console.log(markersData); // Check if the data is correctly logged
+        });
+    </script>
+    <script type="module" crossorigin src="./assets/index.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index.css">
+  </head>
+  <body>
+	<div id="start-message">
+      <h1>Willkommen zu unserer Studie!</h1>
+      <p>Im Folgenden f&uuml;hren Sie einen Test durch, bei dem Sie sich mit Hilfe von 360&deg;-Panoramen auf einer Karte orientieren m&uuml;ssen. 
+        Sie beginnen mit einem Fragebogen, woraufhin ein Tutorial folgt, um sich mit der Umgebung und der Handhabung des Tests vertraut zu machen. Nach dem Tutorial wird der Test direkt beginnen.
+	  </p>
+      <img src="./assets/BHT_Logo-5g-TZuRh.png" alt="BHT Logo" class="img-fluid">	
+      <button id="start-button">Start</button>
+    </div>
+	
+	<div id="tutorial" style="display: none;">
+      <div id="tutorial-popups">
+        <div id="tutorial-step-1" class="tutorial-popup" style="display: none;">
+          <p>Hier sehen Sie ein Beispielpanorama. Verwenden Sie die Maus, um sich umzusehen und hineinzuzoomen.</p>
+          <button id="tutorial-next-1">Weiter</button>
+        </div>
+        <div id="tutorial-step-2" class="tutorial-popup" style="display: none;">
+          <p>Unten rechts sehen Sie eine interaktive Karte, die sie mit dem Pfeil vergr&ouml;&szlig;ern bzw. verkleinern k&ouml;nnen.
+		         Verwenden Sie die Karte, um den Standort des Panoramas zu bestimmen. Damit Sie es leichter haben, ist der Kartenausschnitt auf eine bestimmte Region begrenzt und enth&auml;lt zus&auml;tzlich einen Rahmen. Jeder Panoramastandort liegt innerhalb des Rahmens</p>
+          <button id="tutorial-next-2">Weiter</button>
+        </div>
+        <div id="tutorial-step-3" class="tutorial-popup" style="display: none;">
+          <p>Wenn Sie meinen den Standort gefunden zu haben, setzen Sie einen Marker auf der Karte ab, um den Standort zu markieren. Sie k&ouml;nnen beliebig oft klicken. Der
+		         Marker wird dann aktualisiert.
+		         Klicken Sie anschlie&szlig;end auf "Standort einreichen".</p>
+          <button id="tutorial-next-3">Weiter</button>
+        </div>
+        <div id="tutorial-step-4" class="tutorial-popup" style="display: none;">
+          <p>Beantworten Sie nun beide Fragen. Nennen Sie f&uuml;r die 2. Frage bitte stichpunktartig an welchen Elementen Sie sich 
+            vordergr&uuml;ndig orientieren konnten.
+            Wenn Sie auf OK klicken, kommen Sie zum n&auml;chsten Panorama.</p>
+        </div>
+        <div id="tutorial-step-5" class="tutorial-popup" style="display: none;">
+          <p>Dies ist ein weiteres Beispielpanorama. Wenden Sie die gelernten Schritte darauf an. Aber beachten Sie, dass mit dem n&auml;chsten Panorama der eigentliche Test
+             beginnt. Bitte f&uuml;llen Sie ihn nach Ihrem Ermessen z&uuml;gig und genau aus. Viel Spa&szlig;!
+             <b>Noch ein letzter Hinweis:</b> Sollte ein Panorama mal nicht richtig laden, klicken Sie den Button in der oberen linken Ecke.
+             Bitte <b>Nicht</b> die Seite neu laden.
+          </p>
+          <button id="tutorial-finish">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="panorama-message" class="hidden" style="display: none">Ab hier beginnt der Test! </div>
+	
+    <div id="map" style="display: none;"></div>
+	
+    <div id="map-container" style="display: none;">
+      <div id="google-map"></div>
+      <button id="expand-map-button">&#8598;</button> <!-- Arrow icon for expand -->
+	  <button id="submit-button" style="display: none;">Standort einreichen</button> <!-- New submit button -->
+  </div>
+
+  <button id="reload-panorama" style = "display: none;">&#8635;</button>
+	
+  
+  <div id="end-form" style="display: none;">
+    <form class="col-md-8" id="survey-form">
+        <fieldset>
+
+            <!-- Form Name -->
+            <legend>Vorab ein paar inhaltliche Fragen zur Einordnung Ihrer Ergebnisse</legend>
+
+             <!-- Text input-->
+             <div class="form-group">
+                <label class="control-label" for="age-input">Wie alt sind Sie?</label>
+                <div> 
+                    <input id="age-input" name="age-input" type="text" placeholder="Alter" class="form-control input-md" autocomplete="off">
+                </div>
+            </div>
+
+             <!-- Multiple Radios (inline) -->
+             <div class="form-group">
+                <label class="control-label" for="select-gender">Welchem Geschlecht f&uuml;hlen Sie sich zugeh&ouml;rig?</label>
+                <div>
+                    <label class="radio-inline" for="select-gender-0">
+                        <input type="radio" name="select-gender" id="select-gender-0" value="m" autocomplete="off">
+                        M&auml;nnlich
+                    </label>
+                    <label class="radio-inline" for="select-gender-1">
+                        <input type="radio" name="select-gender" id="select-gender-1" value="w" autocomplete="off">
+                        Weiblich
+                    </label>
+                    <label class="radio-inline" for="select-gender-2">
+                        <input type="radio" name="select-gender" id="select-gender-2" value="d" autocomplete="off">
+                        Divers
+                    </label>
+                </div>
+            </div>
+
+            <!-- Multiple Checkboxes -->
+            <div class="form-group">
+                <label class="control-label" for="checkboxes-state">In welchen Bundesl&auml;ndern kennen Sie sich aus? (Mehrauswahl m&ouml;glich)</label>
+                <div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-0">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-0" value="BW" autocomplete="off">
+                            Baden-W&uuml;rttemberg
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-1">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-1" value="BY" autocomplete="off">
+                            Bayern
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-2">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-2" value="BE" autocomplete="off">
+                            Berlin
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-3">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-3" value="BB" autocomplete="off">
+                            Brandenburg
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-4">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-4" value="HB" autocomplete="off">
+                            Bremen
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-5">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-5" value="HH" autocomplete="off">
+                            Hamburg
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-6">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-6" value="HE" autocomplete="off">
+                            Hessen
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-7">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-7" value="MV" autocomplete="off">
+                            Mecklenburg-Vorpommern
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-8">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-8" value="NI" autocomplete="off">
+                            Niedersachsen
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-9">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-9" value="NW" autocomplete="off">
+                            Nordrhein-Westfalen
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-10">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-10" value="RP" autocomplete="off">
+                            Rheinland-Pfalz
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-11">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-11" value="SL" autocomplete="off">
+                            Saarland
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-12">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-12" value="SN" autocomplete="off">
+                            Sachsen
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-13">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-13" value="ST" autocomplete="off">
+                            Sachsen-Anhalt
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-14">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-14" value="SH" autocomplete="off">
+                            Schleswig-Holstein
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label for="checkboxes-state-15">
+                            <input type="checkbox" name="checkboxes-state" id="checkboxes-state-15" value="TH" autocomplete="off">
+                            Th&uuml;ringen
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multiple Radios -->
+            <div class="form-group">
+                <label class="control-label" for="question-urban-rural">Wo finden Sie sich am besten zurecht?</label>
+                <div>
+                    <div class="radio">
+                        <label for="question-urban-rural-0">
+                            <input type="radio" name="question-urban-rural" id="question-urban-rural-0" value="Stadt" autocomplete="off">
+                            Stadt
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-urban-rural-1">
+                            <input type="radio" name="question-urban-rural" id="question-urban-rural-1" value="Land" autocomplete="off">
+                            Land
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-urban-rural-2">
+                            <input type="radio" name="question-urban-rural" id="question-urban-rural-2" value="Beides" autocomplete="off">
+                            Beides
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-urban-rural-3">
+                            <input type="radio" name="question-urban-rural" id="question-urban-rural-3" value="Keines" autocomplete="off">
+                            Keines
+                        </label>
+                    </div>
+                </div>
+            </div>
+  
+            <!-- Multiple Radios (inline) -->
+            <div class="form-group">
+                <label class="control-label" for="question-study-progamme">Studieren/Studierten Sie ein Geowissenschaftliches Fach (bspw. Geod&auml;sie, Geoinformatik, Kartographie, Geographie, Geologie, usw.)?</label>
+                <div> 
+                    <label class="radio-inline" for="question-study-progamme-0">
+                        <input type="radio" name="question-study-progamme" id="question-study-progamme-0" value="Ja" autocomplete="off">
+                        Ja
+                    </label> 
+                    <label class="radio-inline" for="question-study-progamme-1">
+                        <input type="radio" name="question-study-progamme" id="question-study-progamme-1" value="Nein" autocomplete="off">
+                        Nein
+                    </label>
+                </div>
+            </div>
+  
+            <!-- Multiple Radios -->
+            <div class="form-group">
+                <label class="control-label" for="question-study-degree">Welchen Bildungsabschluss streben Sie an/ haben Sie?</label>
+                <div>
+                    <div class="radio">
+                        <label for="question-study-degree-0">
+                            <input type="radio" name="question-study-degree" id="question-study-degree-0" value="Bachelor" autocomplete="off">
+                            Bachelor oder vergleichbar
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-study-degree-1">
+                            <input type="radio" name="question-study-degree" id="question-study-degree-1" value="Master" autocomplete="off">
+                            Master oder vergleichbar
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-study-degree-2">
+                            <input type="radio" name="question-study-degree" id="question-study-degree-2" value="Doktor" autocomplete="off">
+                            Akademischer Doktorgrad
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-study-degree-3">
+                            <input type="radio" name="question-study-degree" id="question-study-degree-3" value="Anderen" autocomplete="off">
+                            Anderen
+                        </label>
+                    </div>
+                </div>
+            </div>
+  
+            <!-- Multiple Radios -->
+            <div class="form-group">
+                <label class="control-label" for="question-gmaps1">Wie oft nutzen Sie Google Maps (oder eine vergleichbare App)?</label>
+                <div>
+                    <div class="radio">
+                        <label for="question-gmaps1-0">
+                            <input type="radio" name="question-gmaps1" id="question-gmaps1-0" value="t&auml;glich" autocomplete="off">
+                            t&auml;glich
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-gmaps1-1">
+                            <input type="radio" name="question-gmaps1" id="question-gmaps1-1" value="w&ouml;chentlich" autocomplete="off">
+                            w&ouml;chentlich
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-gmaps1-2">
+                            <input type="radio" name="question-gmaps1" id="question-gmaps1-2" value="sporadisch" autocomplete="off">
+                            sporadisch (Ferien, Reisen, etc.)
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-gmaps1-3">
+                            <input type="radio" name="question-gmaps1" id="question-gmaps1-3" value="so gut wie nie" autocomplete="off">
+                            so gut wie nie
+                        </label>
+                        </div>
+                    <div class="radio">
+                        <label for="question-gmaps1-4">
+                            <input type="radio" name="question-gmaps1" id="question-gmaps1-4" value="nie" autocomplete="off">
+                            nie
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Multiple Radios (inline) -->
+            <div class="form-group">
+                <label class="control-label" for="question-gmaps2">Welche Art von Hintergrundkarte nutzen Sie in Google Maps (oder einer vergleichbaren App) vorwiegend?</label>
+                <div> 
+                    <label class="radio-inline" for="question-gmaps2-0">
+                        <input type="radio" name="question-gmaps2" id="question-gmaps2-0" value="Basemap" autocomplete="off">
+                        Basiskarte (Roadmap)
+                    </label> 
+                    <label class="radio-inline" for="question-gmaps2-1">
+                        <input type="radio" name="question-gmaps2" id="question-gmaps2-1" value="Satellitenbild" autocomplete="off">
+                        Luft-/Satellitenbild
+                    </label>
+                </div>
+            </div>
+  
+            <!-- Multiple Radios -->
+            <div class="form-group">
+                <label class="control-label" for="question-other-maps">Nutzen Sie andere Kartendienste (bspw. OSM, Komoot, etc.)?</label>
+                <div>
+                    <div class="radio">
+                        <label for="question-other-maps-0">
+                            <input type="radio" name="question-other-maps" id="question-other-maps-0" value="t&auml;glich" autocomplete="off">
+                            t&auml;glich
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-other-maps-1">
+                            <input type="radio" name="question-other-maps" id="question-other-maps-1" value="w&ouml;chentlich" autocomplete="off">
+                            w&ouml;chentlich
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-other-maps-2">
+                            <input type="radio" name="question-other-maps" id="question-other-maps-2" value="sporadisch" autocomplete="off">
+                            sporadisch (Ferien, Reisen, etc.)
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-other-maps-3">
+                            <input type="radio" name="question-other-maps" id="question-other-maps-3" value="so gut wie nie" autocomplete="off">
+                            so gut wie nie
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-other-maps-4">
+                            <input type="radio" name="question-other-maps" id="question-other-maps-4" value="nie" autocomplete="off">
+                            nie
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Multiple Radios -->
+            <div class="form-group">
+                <label class="control-label" for="question-geoguessr">Haben Sie schon mal Geoguessr gespielt?</label>
+                <div>
+                    <div class="radio">
+                        <label for="question-geoguessr-0">
+                            <input type="radio" name="question-geoguessr" id="question-geoguessr-0" value="Ja" autocomplete="off">
+                            Ja
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-geoguessr-1">
+                            <input type="radio" name="question-geoguessr" id="question-geoguessr-1" value="mehrmals" autocomplete="off">
+                            Ja, mehrmals
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label for="question-geoguessr-2">
+                            <input type="radio" name="question-geoguessr" id="question-geoguessr-2" value="Nein" autocomplete="off">
+                            Nein
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Text input-->
+            <div class="form-group">
+                <label class="control-label" for="key-input">Haben Sie einen Testschl&uuml;ssel bekommen?</label>
+                <div> 
+                    <input id="key-input" name="key-input" type="text" placeholder="Testschl&uuml;ssel" class="form-control input-md" autocomplete="off">
+                </div>
+            </div>
+
+            <!-- Button -->
+            <div class="form-group">
+                <div>
+                    <button id="bt-finish" name="bt-finish" class="btn btn-primary" type="button">Zum Test</button>
+                </div>
+            </div>
+
+        </fieldset>
+    </form>
+</div>
+
+	
+	<div id="finished-message" style="display: none;">
+      <h1>Fertig! Danke f&uuml;r Ihre Teilname</h1>
+    </div>
+
+    
+	<div id="area-knowledge-modal" class="modal" style="display: none;">
+        <div id="test" class="modal-dialog">
+            <div class="modal-content">
+                <button id="modal-exit-button" class="modal-button">&times;</button>
+                <p>Kennen Sie das Gebiet?</p>
+                <label>
+                  <input type="checkbox" id="checkbox-yes" name="area-knowledge"> Ja
+                </label>
+                <label>
+                  <input type="checkbox" id="checkbox-no" name="area-knowledge"> Nein
+                </label>
+                <label>
+                  <p>Woran haben Sie sich orientiert?</p>
+                  <input type="text" id="landmark-input" name="landmark">
+                </label>
+                <button id="modal-ok-button" disabled style="display: none;">OK</button>
+              </div>
+        </div>
+    </div>
+
+    
+
+    <!-- 
+      The `defer` attribute causes the callback to execute after the full HTML
+      document has been parsed. For non-blocking uses, avoiding race conditions,
+      and consistent behavior across browsers, consider loading using Promises.
+      See https://developers.google.com/maps/documentation/javascript/load-maps-js-api
+      for more information.
+      -->
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=API-KEY-PLACEHOLDER&callback=initPano&v=weekly"
+      defer
+    ></script>
+  </body>
+</html>
