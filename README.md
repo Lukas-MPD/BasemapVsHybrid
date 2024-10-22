@@ -9,6 +9,7 @@ We modified it to display 8 static Street View Panoramas sequentially. Additiona
 
 ## Setup
 
+### Linux
 Enter your Google Maps JavaScript API Key and your DNS in `./build_files/.env`.
 
 Build the project via Vite and Node.js. See: `./build_files/cloud_shell_instructions.md`
